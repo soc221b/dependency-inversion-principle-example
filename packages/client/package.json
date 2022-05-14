@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "protoc": "export IN_DIR=../server-grpc OUT_DIR=./src/implementations/grpc/protos && protoc -I=$IN_DIR chat.proto --js_out=import_style=commonjs:$OUT_DIR --grpc-web_out=import_style=typescript,mode=grpcwebtext:$OUT_DIR",
     "serve": "webpack-dev-server"
   },
   "license": "MIT",
@@ -16,6 +17,8 @@
     "webpack-dev-server": "^4.9.0"
   },
   "dependencies": {
+    "google-protobuf": "^3.20.1",
+    "grpc-web": "^1.3.1",
     "rxjs": "^7.5.5",
     "socket.io-client": "^4.5.0"
   }

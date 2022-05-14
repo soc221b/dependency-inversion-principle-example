@@ -3,7 +3,8 @@ import type IChatAPI from "./interface";
 // Change the following to use a different API implementation
 // import ChatAPI from "./implementations/polling"; // comment out and uncomment the other lines to switch between implementations
 // import ChatAPI from "./implementations/web-socket";
-import ChatAPI from "./implementations/graph-ql";
+// import ChatAPI from "./implementations/graph-ql";
+import ChatAPI from "./implementations/grpc"; // before using grpc, make sure to execute `pnpm run protoc` to generate the client stubs
 
 const chatApi: IChatAPI = new ChatAPI();
 
