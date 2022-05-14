@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "name": "chat-server-web-socket",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "serve": "node index.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.6.0"
+  }
+}

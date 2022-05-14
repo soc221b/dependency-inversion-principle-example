@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "name": "how-to-invert-dependency",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "serve": "pnpm --recursive --parallel --aggregate-output run serve"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "prettier": "^2.6.2"
+  }
+}
