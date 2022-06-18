@@ -1,0 +1,14 @@
+{
+  "private": true,
+  "name": "server-sent-events-server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "dev": "node index.js"
+  },
+  "dependencies": {
+    "@graphql-yoga/node": "^2.6.0",
+    "graphql": "^16.5.0"
+  }
+}

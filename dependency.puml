@@ -1,0 +1,14 @@
+@startuml
+
+View ..> ChatAPI
+ChatAPI <|.. gRPCChatAPI
+ChatAPI <|.. LongPollingChatAPI
+ChatAPI <|.. ServerSentEventsChatAPI
+ChatAPI <|.. WebSocketChatAPI
+
+interface ChatAPI {
+  sendMessage(message: string): void
+  onMessage(listener: (message: string) => void): void
+}
+
+@enduml
