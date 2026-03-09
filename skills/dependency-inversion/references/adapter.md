@@ -1,61 +1,81 @@
 # Adapter
 
-Implement multiple transports behind the same port.
+An adapter is the low-level implementation of a port.
 
-```ts
-// adapters/web-socket-chat-adapter.ts
-import type { ChatPort } from "../ports/chat-port";
+Its job is to translate between the policy-owned abstraction and one concrete detail such as WebSocket, SSE, gRPC, REST, Prisma, Stripe, or the filesystem.
 
-export class WebSocketChatAdapter implements ChatPort {
-  private ws = new WebSocket("ws://localhost:3000");
+For example, several implementations might satisfy the same `MessageGateway` port:
 
-  sendMessage(message: string): void {
-    this.ws.send(message);
-  }
+- `WebSocketMessageGateway`
+- `SseMessageGateway`
+- `GrpcMessageGateway`
+- `InMemoryMessageGateway`
 
-  onMessage(listener: (message: string) => void): void {
-    this.ws.onmessage = (event) => listener(event.data);
-  }
-}
+## What Belongs In An Adapter
 
-// adapters/long-polling-chat-adapter.ts
-import type { ChatPort } from "../ports/chat-port";
+Adapters may own:
 
-export class LongPollingChatAdapter implements ChatPort {
-  sendMessage(message: string): void {
-    // POST message to server
-  }
+- connection setup and teardown
+- protocol-specific payload translation
+- SDK or framework calls
+- serialization and deserialization
+- retries or detail-specific error mapping when the policy should not see raw infrastructure behavior
 
-  onMessage(listener: (message: string) => void): void {
-    // poll server for new messages
-  }
-}
+Adapters should not own:
 
-// adapters/in-memory-chat-adapter.ts
-import type { ChatPort } from "../ports/chat-port";
+- business rules
+- application flow decisions
+- UI decisions
+- cross-cutting selection logic about which adapter to use
 
-export class InMemoryChatAdapter implements ChatPort {
-  public sent: string[] = [];
-  private listeners: ((message: string) => void)[] = [];
+## Example
 
-  sendMessage(message: string): void {
-    this.sent.push(message);
-    this.listeners.forEach((fn) => fn(message));
-  }
+Each adapter implements the same port while hiding different transport mechanics:
 
-  onMessage(listener: (message: string) => void): void {
-    this.listeners.push(listener);
-  }
-}
-```
+- long-polling uses a polling transport behind a client library
+- SSE builds a subscription URL and parses event payloads
+- WebSocket sends and receives raw socket messages
+- gRPC creates protobuf requests and reads streaming responses
 
-## Why This Fits DIP
-- Every adapter depends on the `ChatPort` port.
-- Policy code can swap adapters without any changes.
-- Protocol concerns stay in adapters, not in policy.
+That variation is exactly why the port stays small. The policy should not need to know any of those details.
+
+## Design Advice
+
+When writing or reviewing an adapter:
+
+1. Import the port type from the policy side.
+2. Translate the port methods into concrete library calls.
+3. Normalize detail-specific events or payloads back into the port's simpler shape.
+4. Keep detail-specific state private to the adapter.
+
+If the adapter is hard to implement, that often means the port is leaking low-level detail or the policy boundary is in the wrong place.
 
 ## Testing
-- Prefer the in-memory adapter for deterministic policy tests.
+
+Prefer testing policy code with a fake or in-memory adapter.
+
+Use adapter-focused tests only for the detail translation itself:
+
+- does a WebSocket message become the right domain callback?
+- does a gRPC response map to the expected message string?
+- does an SSE payload parse correctly?
+
+## Smells
+
+Watch for these signs that DIP is slipping:
+
+- policy code imports a concrete client "just for one call"
+- adapters return raw vendor objects to the high-level module
+- every adapter needs `if transport === ...` branching inside it
+- the adapter name and port name are identical except for `Impl`
+- changing vendors requires edits in policy code
 
 ## Placement
-- Store concrete adapters under `adapters/` or `infrastructure/`.
+
+Store adapters in a clearly low-level location such as:
+
+- `src/adapters/`
+- `src/infrastructure/`
+- `src/implementations/`
+
+The exact folder matters less than keeping the dependency direction obvious.

@@ -1,42 +1,72 @@
 # Composition Root
 
-Select and inject concrete implementations at a composition boundary (for example an app entry point, DI container, or service locator setup).
+The composition root is the place where you are allowed to know about concrete implementations.
 
-Example layout used by this snippet:
-- `src/main.ts` (composition root)
-- `src/core/chat-room.ts` (policy module)
-- `src/ports/chat-port.ts` (port)
-- `src/adapters/web-socket-chat-adapter.ts` (adapter)
-- `src/adapters/long-polling-chat-adapter.ts` (adapter)
+Its job is simple:
+
+- choose the adapter
+- instantiate it
+- inject it into the policy-facing code
+
+For example, `src/main.ts` or `src/bootstrap.ts` is often the composition root:
 
 ```ts
-// src/main.ts
-import { ChatRoom } from "./core/chat-room";
-import type { ChatPort } from "./ports/chat-port";
-// swap adapter by changing this single import:
-import { WebSocketChatAdapter } from "./adapters/web-socket-chat-adapter";
-// import { LongPollingChatAdapter } from "./adapters/long-polling-chat-adapter";
-// import { SseChatAdapter } from "./adapters/sse-chat-adapter";
+// Choose one implementation:
+// import { GrpcMessageGateway } from "./adapters/grpc-message-gateway";
+import { HttpMessageGateway } from "./adapters/http-message-gateway";
+// import { WebSocketMessageGateway } from "./adapters/web-socket-message-gateway";
 
-const chatPort: ChatPort = new WebSocketChatAdapter();
-const room = new ChatRoom(chatPort);
+import { ConversationService } from "./conversation-service";
 
-room.start();
+const messageGateway = new HttpMessageGateway();
+const conversationService = new ConversationService(messageGateway);
+
+conversationService.start();
 ```
 
-Swapping from WebSocket to long-polling changes only import and instantiation code. `ChatRoom` policy code stays unchanged.
+That file proves the dependency inversion is working:
 
-## Why This Fits DIP
-- Concrete classes are referenced only at the composition boundary.
-- Dependency direction is explicit and easy to audit.
-- Policy code remains independent from infrastructure decisions.
+- `ConversationService` depends only on `MessageGateway`
+- concrete transport knowledge is isolated to `main.ts`
+- swapping implementations changes one import and one instantiation point
 
-## Minimal Config
+## Why This Boundary Matters
+
+Without a composition root, concrete classes tend to leak inward:
+
+- UI code starts importing WebSocket clients directly
+- services instantiate SDKs in constructors
+- selection logic gets duplicated across the codebase
+
+Keeping composition explicit makes the dependency direction easy to audit and change.
+
+## When A Simple Entry Point Is Enough
+
+Prefer a plain entry file when possible. You do not need a DI container just to satisfy DIP.
+
+Use a lightweight factory or configuration branch only when selection is genuinely dynamic:
+
 ```ts
-const adapter = process.env.CHAT_ADAPTER ?? "web-socket";
-const chatPort: ChatPort =
-  adapter === "long-polling"
-    ? new LongPollingChatAdapter()
-    : new WebSocketChatAdapter();
-const room = new ChatRoom(chatPort);
+const adapter = process.env.MESSAGE_GATEWAY ?? "http";
+
+const messageGateway =
+  adapter === "web-socket"
+    ? new WebSocketMessageGateway()
+    : adapter === "grpc"
+      ? new GrpcMessageGateway()
+      : new HttpMessageGateway();
+
+const conversationService = new ConversationService(messageGateway);
+conversationService.start();
 ```
+
+If the branch becomes noisy, that is a signal to extract a tiny factory, not to move adapter selection into the policy layer.
+
+## Checklist
+
+Before calling a refactor "done," verify:
+
+1. Policy modules import only the port type, not concrete adapters.
+2. Concrete adapters are instantiated in one edge location.
+3. Swapping implementations does not require edits in policy code.
+4. Tests can provide a fake without booting real infrastructure.

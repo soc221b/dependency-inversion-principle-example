@@ -1,0 +1,23 @@
+{
+  "skill_name": "dependency-inversion",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review this architecture sketch and tell me whether it actually follows the Dependency Inversion Principle: a `ConversationService` depends on a `MessageGateway` interface, there are `HttpMessageGateway` and `WebSocketMessageGateway` adapters, and `src/main.ts` chooses which one to instantiate. I want a crisp explanation of the policy module, the port, the adapters, and the composition root, plus what should change when we swap implementations.",
+      "expected_output": "Explains the example using the architectural roles rather than vendor details, identifies the policy module, the port, the adapters, and the composition root, and states that swapping implementations should only change composition wiring.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I have a TypeScript service that directly creates a Prisma client and a Stripe client inside the class constructor. Refactor it using dependency inversion so the business logic depends on ports, not those SDKs. Show the proposed port interfaces, adapter responsibilities, and where the wiring should live.",
+      "expected_output": "Produces a policy-first refactor plan with small ports, SDK-specific adapters, and explicit composition at the application boundary. Avoids mirroring the Prisma or Stripe APIs one-to-one.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Can you look at this React component that calls `fetch` in one branch and opens a `WebSocket` in another branch, then tell me whether dependency inversion is actually a good fit here? If yes, sketch the port, the adapters, and a fake for tests. If no, explain why not.",
+      "expected_output": "Evaluates whether DIP is warranted instead of forcing it. If it is, proposes a small policy-owned port, concrete adapters for `fetch` and `WebSocket`, explicit wiring, and a lightweight fake for tests. If not, clearly explains why the seam would be unnecessary ceremony.",
+      "files": []
+    }
+  ]
+}
